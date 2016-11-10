@@ -31,8 +31,8 @@ const rl = readline.createInterface(
 );
 
 // url prompt
-rl.question('Please enter the url you want to scrape into a file, if a url is not provided, we will scrape the results of olyimpic mens basketball: ', (answer) => {
-	console.log('visit localhost:8080/scrape to initate', answer);
+rl.question('Please enter a URL (there is a default URL if one is not provided): ', (answer) => {
+	console.log('visit localhost:8080/scrape to initate.\nText file is named HTMLDump.txt and can be found in the current directory.', answer);
     if (answer) url = answer;
     else{
         url = 'http://www.sbnation.com/2016/8/6/12376006/2016-olympic-basketball-mens-bracket-schedule-scores-results';
