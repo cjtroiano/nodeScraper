@@ -1,93 +1,110 @@
+/*
+Simple web scraping program used to experiment with node.js
+
+Chris Troiano
+*/
+
 var express = require('express');
 var fs 		= require('fs');
 var request = require('request');
 var cheerio = require('cheerio');
 var promise = require('promise');
 var app     = express();
-
-var box = ["apple", "orange"];
-
-// make somesort of input for a url 
-
-function thenWrite(){
-	return new promise(function(resolve, reject){
-		app.get('/scrape', function(req, res){
-
-			url = 'https://www.mtbproject.com/directory/8007188/bay-area';
-
-			var i = 1;
-
-
-			//var pageSource = fs.readFileSync(__dirname + "/index.html", "utf8");
-
-			//var page = cheerio.load(pageSource);
-		    //var bd = page('body');
-
-
-			//console.log(pageSource);
-
-			//var promise = new Promise(
-
-			    request(url, function(error, response, html){
-			        if(!error){
-			            var $ = cheerio.load(html);
-			            
-			            $("td").filter(function(){
-			                var data = $(this);
-			                var the = data.text();
-			                var patt = new RegExp("\n{2,}");
-			                var result = patt.exec(the);
-			                //console.log(i, result);
-			                if(result === null){
-			                	var interum = the.split("\n"|',');
-			                	//var interum = pars.split(",");
-			                	//console.log(interum);
-			                	box.push(interum);
-			                	console.log(interum);
-			                	//var wrk = $("<div></div>").text(interum);
-			                	//bd.append(wrk);
-			                	//bd.html();
-			                	//append("<div>"+interum +"</div>")
-			                	// var div = document.createElement("div");
-			                	// var divTxt = document.createTextNode(interum);
-			                	// div.appendChild(divTxt);
-			                	// document.getElementByTagName('body')[0].appendChild(div);
-			                	// //console.log(i, the);
-			                }
-			            });
-			        }else{
-						console.log(error);
-					}
-					//page.append(bd);
-					//console.log(bd);
-					//console.log(pageSource);
-					//resolve(box);
-					var parse = box.toString();
-					res.send(parse);
-			    });
-			 //    .then(function(){
-			 // 		fs.writeFile("check.html", box.toString(), function(){
-			 // 			console.log("file written");
-			 // 		});
-				// }).catch(console.log("promise caught"));
-			//);
-		    //);
-
-		    
-
-		    console.log("out of the request!");
-		});
-	});
-}
+const readline = require('readline');
 
 app.listen('8080');
-
-console.log('Magic happens on port 8080');
-
-thenWrite().then(function(){
-	fs.writeFile("check.html", box.toString(), function(){
-		console.log("file written");
-	});
-}).catch(console.log("promise caught"));
-
 exports = module.exports = app;
+
+
+// globals
+var HTMLText = [];
+var url;
+
+
+
+// Instantiating the url prompt 
+const rl = readline.createInterface(
+	{
+		input: process.stdin,
+		output: process.stdout
+	}
+);
+
+// url prompt
+rl.question('Please enter the url you want to scrape into a file, if a url is not provided, we will scrape the results of olyimpic mens basketball: ', (answer) => {
+	console.log('visit localhost:8080/scrape to initate', answer);
+    if (answer) url = answer;
+    else{
+        url = 'http://www.sbnation.com/2016/8/6/12376006/2016-olympic-basketball-mens-bracket-schedule-scores-results';
+    }
+    
+	rl.close();
+})
+
+// write contents of HTML text to HTMLDump.txt
+function HtmlTextToFile(txt){
+    fs.writeFile("HTMLDump.txt", txt, function(){
+            console.log("file written");
+    });
+}
+
+// express handling a get request to the /scrape path
+app.get('/scrape', function(req, res){
+
+    // initiate a request to the provided url
+    request(url, function(error, response, html){
+        if(!error){
+
+            //console.log(html);
+            //var re = html.match(">(.*)<")
+            // var htmltxt = html.toString();
+            // var shh = htmltxt.split("\n{2,}"|"\s")
+            // shh.forEach(function(word){
+            //     var re = word.substring(word.lastIndexOf(">")+1,word.lastIndexOf("<"));
+            //     console.log(re);
+            // });
+            //var re = htmltxt.substring(htmltxt.lastIndexOf(">")+1,htmltxt.lastIndexOf("<"));
+            //console.log(re);
+
+            // parse the html for text
+            var $ = cheerio.load(html);
+            var getText = $('html *').contents().map(function() {
+                return (this.type === 'text') ? $(this).text() : '';
+            }).get().join(' ');
+            getText.split("\n"| "\t"|"\n{2,}"|"\s{2,}");
+            
+            console.log(getText.toString());
+
+
+
+            // filter out uncessecary newlines with regex and put remaining text into global var HTMLText
+            // $('#txt').filter(function(){
+            //     var data = $(this);
+            //     console.log(data);
+            //     var unfilteredText = data.text();
+            //     var pattern = new RegExp("\n{2,}");
+            //     var regex = pattern.exec(unfilteredText);
+            //     if(regex === null){
+            //     	var words = unfilteredText.split("\n"|',');
+            //     	HTMLText.push(words);
+            //     	//console.log(words);
+
+            //     }
+            // });
+        }else{
+            // error with the request: show the details in the server command line and send
+            // invalid URL message to the localhost
+			console.log(error);
+            HtmlTextToFile("Scrape Failed\n");
+            res.send("invalid URL");
+
+		}
+        // request was succesful: write scraped HTML text to a file and send confirmation to localhost 
+		var parse = HTMLText.toString();
+		res.send("Success!");
+        HtmlTextToFile(HTMLText.toString());
+    });
+    console.log("out of the request!");
+});
+
+
